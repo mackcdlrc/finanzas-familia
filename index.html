@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Finanzas · Familia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0F1116;
+    --surface:#1A1D26;
+    --surface-2:#22262F;
+    --border:#2B303C;
+    --text:#EDEDF2;
+    --muted:#8A8F9C;
+    --ingreso:#3ECF8E;
+    --gasto:#FF6B6B;
+    --cuota:#F5A623;
+    --accent:#7C9CFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html,body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.num{font-family:'Syne',sans-serif;}
+  button{font-family:inherit;}
+  input,select{font-family:inherit;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .loginBox{
+    width:100%;
+    max-width:360px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:32px 28px;
+  }
+  .loginBox h1{font-size:22px;margin:0 0 4px;}
+  .loginBox p{color:var(--muted);font-size:14px;margin:0 0 24px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .field input,.field select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:15px;
+  }
+  .field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--accent);
+    color:#0F1116;
+    border:none;
+    padding:13px 18px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+  .btn.danger{background:transparent;color:var(--gasto);border:1px solid var(--gasto);}
+  .errorMsg{color:var(--gasto);font-size:13px;margin-top:10px;display:none;}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh;padding-bottom:88px;}
+  header.top{
+    position:sticky;top:0;z-index:10;
+    background:rgba(15,17,22,.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:16px 20px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  header.top .who{font-size:13px;color:var(--muted);}
+  header.top .who b{color:var(--text);}
+  .syncDot{width:8px;height:8px;border-radius:50%;background:var(--ingreso);display:inline-block;margin-right:6px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .refreshBtn{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;}
+
+  main{padding:20px;max-width:640px;margin:0 auto;}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .card .num{font-size:22px;margin-top:6px;}
+  .card.full{grid-column:1/-1;}
+  .num.pos{color:var(--ingreso);}
+  .num.neg{color:var(--gasto);}
+  .num.warn{color:var(--cuota);}
+
+  .sectionTitle{font-size:14px;color:var(--muted);margin:24px 0 10px;text-transform:uppercase;letter-spacing:.04em;}
+
+  .item{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .item .left{flex:1;min-width:0;}
+  .item .desc{font-weight:700;font-size:15px;}
+  .item .meta{font-size:12px;color:var(--muted);margin-top:3px;}
+  .item .amount{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;white-space:nowrap;}
+  .tag{
+    display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;
+    margin-right:6px;text-transform:uppercase;letter-spacing:.03em;font-weight:700;
+  }
+  .tag.cuota{background:rgba(245,166,35,.15);color:var(--cuota);}
+  .tag.completo{background:rgba(62,207,142,.15);color:var(--ingreso);}
+  .progressBar{height:5px;border-radius:4px;background:var(--surface-2);margin-top:8px;overflow:hidden;}
+  .progressBar>div{height:100%;background:var(--cuota);}
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:32px 0;}
+
+  /* ---------- NAV ---------- */
+  nav.bottom{
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    display:flex;
+    z-index:20;
+  }
+  nav.bottom button{
+    flex:1;background:none;border:none;color:var(--muted);
+    padding:12px 4px 10px;font-size:11px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+  }
+  nav.bottom button .ic{font-size:19px;}
+  nav.bottom button.active{color:var(--accent);}
+  .fab{
+    position:fixed;bottom:78px;right:20px;z-index:21;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--accent);color:#0F1116;border:none;
+    font-size:28px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 18px rgba(124,156,255,.4);
+  }
+
+  .tabPanel{display:none;}
+  .tabPanel.active{display:block;}
+
+  /* ---------- MODAL ---------- */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+    z-index:30;align-items:flex-end;justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:var(--surface);
+    border-radius:20px 20px 0 0;
+    width:100%;max-width:480px;
+    padding:22px 20px 28px;
+    max-height:88vh;overflow-y:auto;
+    border-top:1px solid var(--border);
+  }
+  .sheet h3{margin:0 0 18px;font-size:19px;}
+  .segTabs{display:flex;background:var(--surface-2);border-radius:10px;padding:4px;margin-bottom:18px;}
+  .segTabs button{flex:1;background:none;border:none;color:var(--muted);padding:9px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  .segTabs button.active{background:var(--accent);color:#0F1116;}
+  .checkRow{display:flex;align-items:center;gap:10px;margin:14px 0;}
+  .checkRow input{width:18px;height:18px;}
+  .checkRow label{font-size:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  #cuotaFields{display:none;background:var(--surface-2);border-radius:12px;padding:14px;margin-top:6px;}
+  .closeX{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;}
+  .sheetWrap{position:relative;}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--surface-2);border:1px solid var(--border);
+    padding:10px 18px;border-radius:30px;font-size:13px;
+    z-index:40;display:none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen">
+  <div class="loginBox">
+    <h1>Finanzas de la familia</h1>
+    <p>¿Quién eres? Toca tu nombre para entrar.</p>
+    <button class="btn" style="margin-bottom:12px;" onclick="doLogin('Mack')">Mack</button>
+    <button class="btn secondary" onclick="doLogin('Giorgiana')">Giorgiana</button>
+    <div class="errorMsg" id="loginError">No se pudo conectar. Revisa tu conexión a internet.</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header class="top">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;">Finanzas</div>
+      <div class="who"><span class="syncDot"></span>Sesión: <b id="whoLabel"></b></div>
+    </div>
+    <button class="refreshBtn" onclick="loadData(true)">↻ Actualizar<br><span id="lastSync" style="font-size:10px;"></span></button>
+  </header>
+
+  <main>
+
+    <!-- RESUMEN -->
+    <div class="tabPanel active" id="tab-resumen">
+      <div class="cards">
+        <div class="card">
+          <div class="label">Ingresos del mes</div>
+          <div class="num pos" id="sumIngresos">S/ 0</div>
+        </div>
+        <div class="card">
+          <div class="label">Gastos del mes</div>
+          <div class="num neg" id="sumGastos">S/ 0</div>
+        </div>
+        <div class="card">
+          <div class="label">Balance del mes</div>
+          <div class="num" id="sumBalance">S/ 0</div>
+        </div>
+        <div class="card">
+          <div class="label">Deuda pendiente</div>
+          <div class="num warn" id="sumDeuda">S/ 0</div>
+        </div>
+        <div class="card full">
+          <div class="label">Saldo disponible (todo ingreso menos todo gasto, automático)</div>
+          <div class="num" id="sumSaldoTotal" style="font-size:28px;">S/ 0</div>
+        </div>
+      </div>
+
+      <div class="sectionTitle">Cuotas por vencer (próximos 14 días)</div>
+      <div id="proximasCuotas"><div class="empty">Sin cuotas próximas</div></div>
+
+      <div class="sectionTitle">Gastos por categoría</div>
+      <div class="card full" style="padding:16px;"><canvas id="chartCategorias" height="200"></canvas></div>
+
+      <div class="sectionTitle">Ingresos vs gastos (últimos 6 meses)</div>
+      <div class="card full" style="padding:16px;"><canvas id="chartMeses" height="200"></canvas></div>
+    </div>
+
+    <!-- INGRESOS -->
+    <div class="tabPanel" id="tab-ingresos">
+      <div class="sectionTitle">Ingresos registrados</div>
+      <div id="listaIngresos"><div class="empty">Aún no hay ingresos</div></div>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="tabPanel" id="tab-gastos">
+      <div class="sectionTitle">Gastos registrados</div>
+      <div id="listaGastos"><div class="empty">Aún no hay gastos</div></div>
+    </div>
+
+    <!-- DEUDAS -->
+    <div class="tabPanel" id="tab-deudas">
+      <div class="sectionTitle">Deudas y cuotas</div>
+      <div id="listaDeudas"><div class="empty">Aún no hay deudas en cuotas</div></div>
+    </div>
+
+  </main>
+
+  <button class="fab" onclick="openModal()">+</button>
+
+  <nav class="bottom">
+    <button class="active" data-tab="resumen" onclick="switchTab('resumen')"><span class="ic">◐</span>Resumen</button>
+    <button data-tab="ingresos" onclick="switchTab('ingresos')"><span class="ic">↑</span>Ingresos</button>
+    <button data-tab="gastos" onclick="switchTab('gastos')"><span class="ic">↓</span>Gastos</button>
+    <button data-tab="deudas" onclick="switchTab('deudas')"><span class="ic">▤</span>Cuotas</button>
+  </nav>
+</div>
+
+<!-- ===================== MODAL: NUEVO MOVIMIENTO ===================== -->
+<div class="overlay" id="modalOverlay">
+  <div class="sheet sheetWrap">
+    <button class="closeX" onclick="closeModal()">×</button>
+    <h3>Nuevo movimiento</h3>
+
+    <div class="segTabs">
+      <button id="segIngreso" class="active" onclick="setTipo('Ingreso')">Ingreso</button>
+      <button id="segGasto" onclick="setTipo('Gasto')">Gasto</button>
+    </div>
+
+    <div class="field">
+      <label>Descripción</label>
+      <input type="text" id="fDescripcion" placeholder="Ej. Sueldo, útiles, luz...">
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Monto (S/)</label>
+        <input type="number" id="fMonto" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="fFecha">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Categoría</label>
+      <select id="fCategoria">
+        <option>Ventas / Sueldo</option>
+        <option>Servicios (luz, agua, internet)</option>
+        <option>Mercadería / Insumos</option>
+        <option>Alquiler</option>
+        <option>Alimentación</option>
+        <option>Transporte</option>
+        <option>Salud</option>
+        <option>Educación</option>
+        <option>Otro</option>
+      </select>
+    </div>
+
+    <div class="checkRow" id="cuotaCheckRow">
+      <input type="checkbox" id="fEsCuota" onchange="toggleCuotaFields()">
+      <label for="fEsCuota">Se paga en cuotas / es una deuda</label>
+    </div>
+
+    <div id="cuotaFields">
+      <div class="grid2">
+        <div class="field">
+          <label>N° de cuotas</label>
+          <input type="number" id="fNumCuotas" min="1" placeholder="Ej. 12" oninput="calcularValorCuota()">
+        </div>
+        <div class="field">
+          <label>Valor de c/cuota (S/)</label>
+          <input type="number" id="fValorCuota" step="0.01" placeholder="Auto">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Primera cuota</label>
+          <input type="date" id="fFechaInicio">
+        </div>
+        <div class="field">
+          <label>Frecuencia</label>
+          <select id="fFrecuencia">
+            <option value="Mensual">Mensual</option>
+            <option value="Quincenal">Quincenal</option>
+            <option value="Semanal">Semanal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="guardarMovimiento()" style="margin-top:10px;">Guardar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   CONFIGURACIÓN — reemplaza estos dos valores después de publicar tu
+   Google Apps Script (ver README.md para el paso a paso).
+   ====================================================================== */
+const CONFIG = {
+  API_URL: "PEGA_AQUI_LA_URL_DE_TU_APPS_SCRIPT",
+  APP_TOKEN: "cambia-esto-por-una-clave-larga" // clave interna, NO se pide al usuario. Debe coincidir con APP_TOKEN en Code.gs
+};
+const REFRESH_MS = 5000; // qué tan seguido se sincroniza automáticamente (5 segundos)
+
+let movimientos = [];
+let currentUser = "";
+let currentTipo = "Ingreso";
+let refreshTimer = null;
+
+/* ---------------- LOGIN ---------------- */
+function doLogin(user){
+  currentUser = user;
+  localStorage.setItem('ff_user', user);
+  enterApp();
+}
+
+function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('whoLabel').textContent = currentUser;
+  document.getElementById('fFecha').valueAsDate = new Date();
+  loadData(true);
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=>loadData(false), REFRESH_MS);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) loadData(false); });
+}
+
+(function autoLogin(){
+  const savedUser = localStorage.getItem('ff_user');
+  if(savedUser){
+    currentUser = savedUser;
+    enterApp();
+  }
+})();
+
+/* ---------------- DATA: LOAD / SAVE via Google Apps Script ---------------- */
+async function loadData(showToast){
+  try{
+    const res = await fetch(`${CONFIG.API_URL}?action=list&token=${encodeURIComponent(CONFIG.APP_TOKEN)}`);
+    const data = await res.json();
+    if(data.error){ throw new Error(data.error); }
+    movimientos = data;
+    localStorage.setItem('ff_cache', JSON.stringify(movimientos));
+    render();
+    document.getElementById('lastSync').textContent = "Actualizado " + new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    if(showToast) showT("Datos actualizados");
+  }catch(e){
+    // fallback a caché local si falla la red
+    const cached = localStorage.getItem('ff_cache');
+    if(cached){ movimientos = JSON.parse(cached); render(); }
+    showT("Sin conexión: mostrando datos guardados");
+  }
+}
+
+async function apiPost(payload){
+  const res = await fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain'}, // evita preflight CORS en Apps Script
+    body: JSON.stringify({ token: CONFIG.APP_TOKEN, ...payload })
+  });
+  return res.json();
+}
+
+/* ---------------- MODAL ---------------- */
+function openModal(){
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+function setTipo(t){
+  currentTipo = t;
+  document.getElementById('segIngreso').classList.toggle('active', t==='Ingreso');
+  document.getElementById('segGasto').classList.toggle('active', t==='Gasto');
+  document.getElementById('cuotaCheckRow').style.display = t==='Gasto' ? 'flex' : 'none';
+  if(t==='Ingreso'){
+    document.getElementById('fEsCuota').checked = false;
+    toggleCuotaFields();
+  }
+}
+function toggleCuotaFields(){
+  const on = document.getElementById('fEsCuota').checked;
+  document.getElementById('cuotaFields').style.display = on ? 'block' : 'none';
+}
+function calcularValorCuota(){
+  const monto = parseFloat(document.getElementById('fMonto').value) || 0;
+  const n = parseInt(document.getElementById('fNumCuotas').value) || 0;
+  if(monto && n){
+    document.getElementById('fValorCuota').value = (monto/n).toFixed(2);
+  }
+}
+
+async function guardarMovimiento(){
+  const descripcion = document.getElementById('fDescripcion').value.trim();
+  const monto = parseFloat(document.getElementById('fMonto').value);
+  const fecha = document.getElementById('fFecha').value;
+  const categoria = document.getElementById('fCategoria').value;
+  const esCuota = document.getElementById('fEsCuota').checked;
+
+  if(!descripcion || !monto || !fecha){
+    showT("Completa descripción, monto y fecha");
+    return;
+  }
+
+  const payload = {
+    action: 'create',
+    tipo: currentTipo,
+    usuario: currentUser,
+    descripcion, monto, categoria,
+    fecha_registro: fecha,
+    esCuotas: esCuota ? 'SI' : 'NO',
+    numCuotas: '', valorCuota: '', fechaInicio: '', frecuencia: '', cuotasPagadas: '',
+    estado: 'Activo'
+  };
+
+  if(esCuota){
+    const numCuotas = parseInt(document.getElementById('fNumCuotas').value);
+    const valorCuota = parseFloat(document.getElementById('fValorCuota').value);
+    const fechaInicio = document.getElementById('fFechaInicio').value;
+    const frecuencia = document.getElementById('fFrecuencia').value;
+    if(!numCuotas || !valorCuota || !fechaInicio){
+      showT("Completa los datos de las cuotas");
+      return;
+    }
+    payload.numCuotas = numCuotas;
+    payload.valorCuota = valorCuota;
+    payload.fechaInicio = fechaInicio;
+    payload.frecuencia = frecuencia;
+  }
+
+  showT("Guardando...");
+  const r = await apiPost(payload);
+  if(r.error){ showT("Error: " + r.error); return; }
+  closeModal();
+  resetForm();
+  await loadData(false);
+  showT("Movimiento guardado");
+}
+
+function resetForm(){
+  document.getElementById('fDescripcion').value='';
+  document.getElementById('fMonto').value='';
+  document.getElementById('fEsCuota').checked=false;
+  document.getElementById('fNumCuotas').value='';
+  document.getElementById('fValorCuota').value='';
+  document.getElementById('fFechaInicio').value='';
+  toggleCuotaFields();
+  document.getElementById('fFecha').valueAsDate = new Date();
+}
+
+/* ---------------- MARCAR / DESMARCAR CUOTA (pagada <-> pendiente) ---------------- */
+async function toggleCuota(id, numCuota, cuotasPagadasActuales, pagar){
+  const set = new Set((cuotasPagadasActuales||'').split(',').filter(Boolean).map(Number));
+  if(pagar) set.add(numCuota); else set.delete(numCuota);
+  const nuevas = Array.from(set).sort((a,b)=>a-b).join(',');
+  showT(pagar ? "Marcando como pagada..." : "Marcando como pendiente...");
+  const r = await apiPost({ action:'update', id, cuotasPagadas: nuevas });
+  if(r.error){ showT("Error: " + r.error); return; }
+  await loadData(false);
+  showT(pagar ? "Cuota pagada ✓" : "Cuota vuelta a pendiente");
+}
+
+const deudasExpandidas = new Set();
+function toggleDetalleDeuda(id){
+  if(deudasExpandidas.has(id)) deudasExpandidas.delete(id); else deudasExpandidas.add(id);
+  render();
+}
+
+async function anularMovimiento(id){
+  if(!confirm("¿Anular este movimiento? No se eliminará, solo se marcará como anulado.")) return;
+  const r = await apiPost({ action:'update', id, estado:'Anulado' });
+  if(r.error){ showT("Error: " + r.error); return; }
+  await loadData(false);
+  showT("Movimiento anulado");
+}
+
+/* ---------------- CUOTAS: CALCULO DE FECHAS ---------------- */
+function calcularFechasCuotas(fechaInicio, frecuencia, numCuotas){
+  const fechas = [];
+  let d = new Date(fechaInicio + 'T00:00:00');
+  for(let i=1;i<=numCuotas;i++){
+    fechas.push(new Date(d));
+    if(frecuencia==='Mensual') d.setMonth(d.getMonth()+1);
+    else if(frecuencia==='Quincenal') d.setDate(d.getDate()+15);
+    else d.setDate(d.getDate()+7);
+  }
+  return fechas;
+}
+
+/* ---------------- RENDER ---------------- */
+function fmt(n){ return 'S/ ' + Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(d){ return new Date(d+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short'}); }
+
+function render(){
+  const activos = movimientos.filter(m => m.estado !== 'Anulado');
+  const now = new Date();
+  const mesActual = now.getMonth(), anioActual = now.getFullYear();
+
+  // ---- Resumen mensual ----
+  let ingresosMes = 0, gastosMes = 0, deudaPendiente = 0;
+  activos.forEach(m=>{
+    const f = new Date(m.fecha_registro + 'T00:00:00');
+    const esDelMes = f.getMonth()===mesActual && f.getFullYear()===anioActual;
+    if(m.tipo==='Ingreso' && esDelMes) ingresosMes += Number(m.monto);
+    if(m.tipo==='Gasto' && m.esCuotas!=='SI' && esDelMes) gastosMes += Number(m.monto);
+    if(m.esCuotas==='SI'){
+      const pagadas = (m.cuotasPagadas||'').split(',').filter(Boolean).length;
+      const pendientes = Number(m.numCuotas) - pagadas;
+      if(pendientes>0) deudaPendiente += pendientes * Number(m.valorCuota);
+      // cuota pagada este mes cuenta como gasto del mes
+      const fechas = calcularFechasCuotas(m.fechaInicio, m.frecuencia, m.numCuotas);
+      fechas.forEach((fc,idx)=>{
+        const pagadaSet = new Set((m.cuotasPagadas||'').split(',').filter(Boolean).map(Number));
+        if(pagadaSet.has(idx+1) && fc.getMonth()===mesActual && fc.getFullYear()===anioActual){
+          gastosMes += Number(m.valorCuota);
+        }
+      });
+    }
+  });
+
+  document.getElementById('sumIngresos').textContent = fmt(ingresosMes);
+  document.getElementById('sumGastos').textContent = fmt(gastosMes);
+  const balance = ingresosMes - gastosMes;
+  const balEl = document.getElementById('sumBalance');
+  balEl.textContent = fmt(balance);
+  balEl.className = 'num ' + (balance>=0?'pos':'neg');
+  document.getElementById('sumDeuda').textContent = fmt(deudaPendiente);
+
+  // ---- Saldo total automático (todo el tiempo: ingresos - gastos - cuotas pagadas) ----
+  let saldoTotal = 0;
+  activos.forEach(m=>{
+    if(m.tipo==='Ingreso') saldoTotal += Number(m.monto);
+    if(m.tipo==='Gasto' && m.esCuotas!=='SI') saldoTotal -= Number(m.monto);
+    if(m.esCuotas==='SI'){
+      const pagadas = (m.cuotasPagadas||'').split(',').filter(Boolean).length;
+      saldoTotal -= pagadas * Number(m.valorCuota);
+    }
+  });
+  const saldoEl = document.getElementById('sumSaldoTotal');
+  saldoEl.textContent = fmt(saldoTotal);
+  saldoEl.className = 'num ' + (saldoTotal>=0?'pos':'neg');
+
+  // ---- Próximas cuotas (14 días) ----
+  const proximas = [];
+  activos.filter(m=>m.esCuotas==='SI').forEach(m=>{
+    const fechas = calcularFechasCuotas(m.fechaInicio, m.frecuencia, m.numCuotas);
+    const pagadas = new Set((m.cuotasPagadas||'').split(',').filter(Boolean).map(Number));
+    fechas.forEach((fc, idx)=>{
+      const numCuota = idx+1;
+      if(pagadas.has(numCuota)) return;
+      const diffDias = Math.ceil((fc - now)/86400000);
+      if(diffDias >= -3 && diffDias <= 14){
+        proximas.push({m, fc, numCuota, diffDias});
+      }
+    });
+  });
+  proximas.sort((a,b)=>a.fc-b.fc);
+  const contProx = document.getElementById('proximasCuotas');
+  if(proximas.length===0){
+    contProx.innerHTML = '<div class="empty">Sin cuotas próximas</div>';
+  }else{
+    contProx.innerHTML = proximas.slice(0,8).map(p=>`
+      <div class="item">
+        <div class="left">
+          <div class="desc">${esc(p.m.descripcion)} <span style="color:var(--muted);font-weight:400;">— cuota ${p.numCuota}/${p.m.numCuotas}</span></div>
+          <div class="meta">${p.diffDias<0?'Vencida':'Vence'} ${fmtDate(p.fc.toISOString().slice(0,10))} · ${esc(p.m.usuario||'')}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="amount" style="color:var(--cuota);">${fmt(p.m.valorCuota)}</div>
+          <button class="btn secondary" style="padding:6px 10px;font-size:11px;margin-top:6px;width:auto;" onclick="toggleCuota('${p.m.id}', ${p.numCuota}, '${p.m.cuotasPagadas||''}', true)">Marcar pagada</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ---- Ingresos ----
+  const ingresos = activos.filter(m=>m.tipo==='Ingreso').sort((a,b)=> b.fecha_registro.localeCompare(a.fecha_registro));
+  document.getElementById('listaIngresos').innerHTML = ingresos.length ? ingresos.map(m=>`
+    <div class="item">
+      <div class="left">
+        <div class="desc">${esc(m.descripcion)}</div>
+        <div class="meta">${esc(m.categoria||'')} · ${fmtDate(m.fecha_registro)} · ${esc(m.usuario||'')}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="amount" style="color:var(--ingreso);">+${fmt(m.monto)}</div>
+        <button class="btn danger" style="padding:4px 8px;font-size:10px;margin-top:6px;width:auto;" onclick="anularMovimiento('${m.id}')">Anular</button>
+      </div>
+    </div>
+  `).join('') : '<div class="empty">Aún no hay ingresos</div>';
+
+  // ---- Gastos (no cuota) ----
+  const gastos = activos.filter(m=>m.tipo==='Gasto' && m.esCuotas!=='SI').sort((a,b)=> b.fecha_registro.localeCompare(a.fecha_registro));
+  document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(m=>`
+    <div class="item">
+      <div class="left">
+        <div class="desc">${esc(m.descripcion)}</div>
+        <div class="meta">${esc(m.categoria||'')} · ${fmtDate(m.fecha_registro)} · ${esc(m.usuario||'')}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="amount" style="color:var(--gasto);">-${fmt(m.monto)}</div>
+        <button class="btn danger" style="padding:4px 8px;font-size:10px;margin-top:6px;width:auto;" onclick="anularMovimiento('${m.id}')">Anular</button>
+      </div>
+    </div>
+  `).join('') : '<div class="empty">Aún no hay gastos</div>';
+
+  // ---- Deudas / cuotas ----
+  const deudas = activos.filter(m=>m.esCuotas==='SI').sort((a,b)=> b.fecha_registro.localeCompare(a.fecha_registro));
+  document.getElementById('listaDeudas').innerHTML = deudas.length ? deudas.map(m=>{
+    const pagadasSet = new Set((m.cuotasPagadas||'').split(',').filter(Boolean).map(Number));
+    const pagadas = pagadasSet.size;
+    const pct = Math.round((pagadas/m.numCuotas)*100);
+    const completo = pagadas >= m.numCuotas;
+    const expandido = deudasExpandidas.has(m.id);
+    const fechas = calcularFechasCuotas(m.fechaInicio, m.frecuencia, m.numCuotas);
+
+    const detalle = expandido ? `
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+        ${fechas.map((fc,idx)=>{
+          const n = idx+1;
+          const pagada = pagadasSet.has(n);
+          return `
+          <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13px;cursor:pointer;">
+            <span style="display:flex;align-items:center;gap:10px;">
+              <input type="checkbox" ${pagada?'checked':''} style="width:17px;height:17px;" onchange="toggleCuota('${m.id}', ${n}, '${m.cuotasPagadas||''}', this.checked)">
+              Cuota ${n}/${m.numCuotas} · ${fmtDate(fc.toISOString().slice(0,10))}
+            </span>
+            <span style="color:${pagada?'var(--ingreso)':'var(--cuota)'};font-weight:700;">${pagada?'Pagada':'Pendiente'}</span>
+          </label>`;
+        }).join('')}
+      </div>` : '';
+
+    return `
+    <div class="item" style="display:block;">
+      <div style="display:flex;justify-content:space-between;">
+        <div class="left">
+          <div class="desc">${esc(m.descripcion)}</div>
+          <div class="meta">${esc(m.categoria||'')} · ${esc(m.usuario||'')} · ${esc(m.frecuencia||'')}</div>
+        </div>
+        <div class="amount" style="color:var(--cuota);">${fmt(m.monto)}</div>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="tag ${completo?'completo':'cuota'}">${completo?'Completado':pagadas+'/'+m.numCuotas+' cuotas'}</span>
+        <span style="font-size:12px;color:var(--muted);">${fmt(m.valorCuota)} c/u</span>
+      </div>
+      <div class="progressBar"><div style="width:${pct}%;"></div></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn secondary" style="padding:6px 10px;font-size:11px;width:auto;" onclick="toggleDetalleDeuda('${m.id}')">${expandido?'Ocultar cuotas':'Ver / marcar cuotas'}</button>
+        ${!completo ? `<button class="btn danger" style="padding:6px 10px;font-size:11px;width:auto;" onclick="anularMovimiento('${m.id}')">Anular deuda</button>` : ''}
+      </div>
+      ${detalle}
+    </div>`;
+  }).join('') : '<div class="empty">Aún no hay deudas en cuotas</div>';
+
+  renderCharts(activos, now);
+}
+
+function esc(s){ return (s||'').toString().replace(/</g,'&lt;'); }
+
+/* ---------------- GRÁFICOS ---------------- */
+let chartCat, chartMeses;
+const PALETA = ['#7C9CFF','#FF6B6B','#F5A623','#3ECF8E','#C792EA','#4FD1C5','#F783AC','#FFD166'];
+
+function renderCharts(activos, now){
+  if(typeof Chart === 'undefined') return;
+
+  // --- Gastos por categoría (incluye el gasto de cuotas ya pagadas) ---
+  const porCategoria = {};
+  activos.forEach(m=>{
+    if(m.tipo!=='Gasto') return;
+    const cat = m.categoria || 'Otro';
+    if(m.esCuotas==='SI'){
+      const pagadas = (m.cuotasPagadas||'').split(',').filter(Boolean).length;
+      if(pagadas>0) porCategoria[cat] = (porCategoria[cat]||0) + pagadas*Number(m.valorCuota);
+    }else{
+      porCategoria[cat] = (porCategoria[cat]||0) + Number(m.monto);
+    }
+  });
+  const catLabels = Object.keys(porCategoria);
+  const catData = Object.values(porCategoria);
+
+  const ctxCat = document.getElementById('chartCategorias');
+  if(chartCat) chartCat.destroy();
+  if(ctxCat){
+    chartCat = new Chart(ctxCat, {
+      type: 'doughnut',
+      data: {
+        labels: catLabels.length ? catLabels : ['Sin datos'],
+        datasets: [{
+          data: catData.length ? catData : [1],
+          backgroundColor: catLabels.length ? PALETA : ['#2B303C'],
+          borderColor: '#1A1D26',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#8A8F9C', font:{family:"'DM Sans'"}, boxWidth: 12, padding: 12 } }
+        },
+        cutout: '62%'
+      }
+    });
+  }
+
+  // --- Ingresos vs gastos, últimos 6 meses ---
+  const meses = [];
+  for(let i=5;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    meses.push({ label: d.toLocaleDateString('es-PE',{month:'short'}), mes: d.getMonth(), anio: d.getFullYear() });
+  }
+  const ingresosPorMes = meses.map(()=>0);
+  const gastosPorMes = meses.map(()=>0);
+
+  activos.forEach(m=>{
+    if(m.tipo==='Ingreso'){
+      const f = new Date(m.fecha_registro+'T00:00:00');
+      const idx = meses.findIndex(mm=>mm.mes===f.getMonth() && mm.anio===f.getFullYear());
+      if(idx>=0) ingresosPorMes[idx] += Number(m.monto);
+    }
+    if(m.tipo==='Gasto' && m.esCuotas!=='SI'){
+      const f = new Date(m.fecha_registro+'T00:00:00');
+      const idx = meses.findIndex(mm=>mm.mes===f.getMonth() && mm.anio===f.getFullYear());
+      if(idx>=0) gastosPorMes[idx] += Number(m.monto);
+    }
+    if(m.esCuotas==='SI'){
+      const fechas = calcularFechasCuotas(m.fechaInicio, m.frecuencia, m.numCuotas);
+      const pagadasSet = new Set((m.cuotasPagadas||'').split(',').filter(Boolean).map(Number));
+      fechas.forEach((fc,idx2)=>{
+        if(!pagadasSet.has(idx2+1)) return;
+        const idx = meses.findIndex(mm=>mm.mes===fc.getMonth() && mm.anio===fc.getFullYear());
+        if(idx>=0) gastosPorMes[idx] += Number(m.valorCuota);
+      });
+    }
+  });
+
+  const ctxMeses = document.getElementById('chartMeses');
+  if(chartMeses) chartMeses.destroy();
+  if(ctxMeses){
+    chartMeses = new Chart(ctxMeses, {
+      type: 'bar',
+      data: {
+        labels: meses.map(m=>m.label),
+        datasets: [
+          { label: 'Ingresos', data: ingresosPorMes, backgroundColor: '#3ECF8E', borderRadius: 5 },
+          { label: 'Gastos', data: gastosPorMes, backgroundColor: '#FF6B6B', borderRadius: 5 }
+        ]
+      },
+      options: {
+        plugins: { legend: { position:'bottom', labels:{ color:'#8A8F9C', font:{family:"'DM Sans'"}, boxWidth:12 } } },
+        scales: {
+          x: { ticks:{ color:'#8A8F9C' }, grid:{ display:false } },
+          y: { ticks:{ color:'#8A8F9C' }, grid:{ color:'#2B303C' } }
+        }
+      }
+    });
+  }
+}
+
+/* ---------------- TABS ---------------- */
+function switchTab(tab){
+  document.querySelectorAll('.tabPanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+}
+
+/* ---------------- TOAST ---------------- */
+let toastTimer;
+function showT(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2500);
+}
+
+setTipo('Ingreso');
+</script>
+</body>
+</html>

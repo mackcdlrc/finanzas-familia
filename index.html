@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Finanzas Familiares</title>
+<meta name="description" content="Control de ingresos, gastos, deudas, ahorro y presupuesto familiar.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230F3D3E%22/><text x=%2250%22 y=%2266%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23E8A33D%22 font-family=%22Georgia%22>F</text></svg>">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="mark">F</div>
+    <h1>Finanzas Familiares</h1>
+    <p class="sub">Elige tu usuario para continuar</p>
+    <div class="login-users" id="login-users"></div>
+    <p class="login-note">Los datos se guardan en este navegador. Si usas la app en dos dispositivos, cada uno tendrá su propia copia local (no hay sincronización entre ellos en esta versión).</p>
+  </div>
+</div>
+
+<!-- ===================== APP SHELL ===================== -->
+<div id="app">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">F</div>
+      <div>
+        <div class="name">Finanzas</div>
+        <div class="sub">Familiares</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav-menu">
+      <!-- injected by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="avatar" id="sb-avatar">A</div>
+        <div>
+          <div class="uname" id="sb-uname">—</div>
+          <div class="urole">Administrador</div>
+        </div>
+      </div>
+      <div class="footer-row">
+        <button class="icon-btn" id="theme-toggle" title="Cambiar tema"></button>
+        <button class="icon-btn" id="logout-btn" title="Cerrar sesión"></button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn hamburger" id="hamburger-btn"></button>
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="search-wrap" id="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="global-search" placeholder="Buscar ingresos, gastos, deudas…" autocomplete="off">
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="mobile-search-btn" style="display:none;"></button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <!-- views injected by JS -->
+    </div>
+  </main>
+</div>
+
+<!-- ===================== MODAL (generic form) ===================== -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Título</h3>
+      <button class="close-x" id="modal-close"></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ===================== CONFIRM DIALOG ===================== -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+    <h3 id="confirm-title">¿Confirmar?</h3>
+    <p id="confirm-text">Esta acción se puede deshacer desde la papelera.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary btn-block" id="confirm-cancel">Cancelar</button>
+      <button class="btn btn-danger btn-block" id="confirm-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/icons.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
